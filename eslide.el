@@ -101,7 +101,8 @@
     (with-current-buffer notes
       (loop for win in (get-buffer-window-list notes)
             do (set-window-point win (point-max)))
-      (goto-char (point-max)))))
+      (goto-char (point-max))
+      (recenter -1))))
 
 (defun eslide-show-slide (text)
   (destructuring-bind (show notes) eslide-buffers
