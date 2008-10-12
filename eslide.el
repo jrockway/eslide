@@ -23,10 +23,10 @@
         do (with-current-buffer i
              (use-local-map eslide-control-map)
              (setq buffer-read-only t))
-             collect i))
+        collect i))
 
 (with-current-buffer (car eslide-buffers)
-  (buffer-face-set '(variable-pitch :height 4.0 :family "Times New Roman")))
+  (buffer-face-set '(:height 2.0)))
 
 (defun eslide-start nil
   "Start the slideshow using the current buffer as the slide source"
@@ -123,17 +123,18 @@
    (goto-char (point-min))
    (insert  "\n")
    (ignore-errors
-     (while t
+     (while (< (point) (point-max))
        (beginning-of-line)
        (insert "  ")
-       (next-line)))))
+       (next-line)
+       (end-of-line)))))
 
 (defun fontify-code (code)
   (with-string-buffer code
-   (setq buffer-file-name "/tmp/eslide")
-   (cperl-mode)
-   (font-lock-fontify-buffer)
-   (setq buffer-file-name nil)))
+      (setq buffer-file-name "/tmp/eslide")
+      (cperl-mode)
+      (font-lock-fontify-buffer)
+      (setq buffer-file-name nil)))
 
 (defun format-one-chunk nil
   (when (progn (beginning-of-line) (looking-at "    "))
@@ -150,7 +151,9 @@
       (let ((code (fontify-code (buffer-substring start end))))
         (goto-char start)
         (delete-region start end)
-        (insert code))))
+        (insert code)
+;        (put-text-property start (point) 'face '(fixed-pitch)))))
+)))
   (next-line))
 
 (defun eslide-format-slide (slide)
