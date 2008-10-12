@@ -13,6 +13,7 @@
 (defconst +eslide-separator+ "^----\n")
 (defvar eslide-slide-source nil)
 (defvar eslide-current-slide-overlay nil)
+(defvar eslide-start-time nil)
 
 (defface eslide-code '((t
                         (:underline "green" :background "grey20"))) "indented code face")
@@ -38,6 +39,7 @@
         (make-overlay (point-min) (point-min) eslide-slide-source))
   (overlay-put eslide-current-slide-overlay 'face '(:background "#040"))
   eslide-buffers
+  (setq eslide-start-time (cadr (current-time)))
   (eslide-next))
 
 (define-derived-mode eslide-edit-mode fundamental-mode "ESlide[Edit]"
@@ -168,6 +170,9 @@
              (goto-char (overlay-end eslide-current-slide-overlay))
              (ignore-errors (skip-chars-forward "-\n"))))
       (eslide-update-current-slide (point)))
+    (eslide-show-note "time: %s"
+      (eslide-format-note
+       (format "%d" (/ (- (cadr (current-time)) eslide-start-time) 60)) 'font-lock-warning-face))
     (let ((text (eslide-get-current-slide-text)))
       (eslide-show-note "current: %s"
                         (eslide-format-note text
