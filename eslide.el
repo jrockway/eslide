@@ -14,6 +14,8 @@
 (defvar eslide-slide-source nil)
 (defvar eslide-current-slide-overlay nil)
 
+(defface eslide-code '((t
+                        (:underline "green" :background "grey20"))) "indented code face")
 (defvar eslide-buffers
   (loop for i in (list (get-buffer-create "*ESlide Show*")
                        (get-buffer-create "*ESlide Notes*"))
@@ -40,7 +42,10 @@
 
 (define-derived-mode eslide-edit-mode fundamental-mode "ESlide[Edit]"
   "Edit eslides"
-  (setq font-lock-defaults (list (list +eslide-separator+) t))
+  (setq font-lock-defaults (list
+     (list +eslide-separator+
+           '("^    " . eslide-code-face))
+     t))
   (define-key eslide-edit-mode-map (kbd "C-c C-c") #'eslide-start)
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
   (define-key eslide-edit-mode-map (kbd "C-c C-p") #'eslide-prev))
@@ -106,8 +111,51 @@
 (defmacro with-string-buffer (string &rest forms)
   `(with-temp-buffer
      (insert ,string)
-     ,@forms
+     (unwind-protect (progn ,@forms)
+       (set-buffer-modified-p nil))
      (buffer-substring (point-min) (point-max))))
+
+(defun eslide-format-note (note face)
+  (with-string-buffer
+   (propertize note 'face (list :inherit face))
+   (goto-char (point-min))
+   (insert  "\n")
+   (ignore-errors
+     (while t
+       (beginning-of-line)
+       (insert "  ")
+       (next-line)))))
+
+(defun fontify-code (code)
+  (with-string-buffer code
+   (setq buffer-file-name "/tmp/eslide")
+   (cperl-mode)
+   (font-lock-fontify-buffer)
+   (setq buffer-file-name nil)))
+
+(defun format-one-chunk nil
+  (when (progn (beginning-of-line) (looking-at "  "))
+    (let ((start (point)) (end (save-excursion (end-of-line) (point))) (flag t))
+      (ignore-errors
+        (while flag
+          (message "at %d %d" start end)
+          (next-line)
+          (if (progn
+                (beginning-of-line)
+                (looking-at "    "))
+              (setq end (progn (end-of-line) (point)))
+            (setq flag nil))))
+      (let ((code (fontify-code (buffer-substring start end))))
+        (goto-char start)
+        (delete-region start end)
+        (insert code))))
+  (next-line))
+
+(defun eslide-format-slide (slide)
+  (with-string-buffer slide
+    (goto-char (point-min))
+    (ignore-errors (while t
+                     (format-one-chunk)))))
 
 (defun eslide-move (direction)
   "Move next slide in positive or negative DIRECTION"
@@ -124,7 +172,7 @@
       (eslide-show-note "current: %s"
                         (eslide-format-note text
                                             'font-lock-keyword-face))
-      (eslide-show-slide text))
+      (eslide-show-slide (eslide-format-slide text)))
     (let ((next
            (destructuring-bind (start . end)
                (eslide-get-slide-near
@@ -138,18 +186,6 @@
                         (eslide-format-note next
                                             'font-lock-type-face)))))
 
-(defun eslide-format-note (note face)
-  (with-string-buffer
-   (propertize note 'face (list :inherit face))
-   (goto-char (point-min))
-   (insert  "\n")
-   (ignore-errors
-     (while t
-       (beginning-of-line)
-       (insert "  ")
-       (next-line)))))
-
-
 (defun eslide-next nil
   (interactive)
   (eslide-move 1))
@@ -157,3 +193,5 @@
 (defun eslide-prev nil
   (interactive)
   (eslide-move -1))
+
+
