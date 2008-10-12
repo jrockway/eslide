@@ -134,11 +134,11 @@
    (setq buffer-file-name nil)))
 
 (defun format-one-chunk nil
-  (when (progn (beginning-of-line) (looking-at "  "))
+  (when (progn (beginning-of-line) (looking-at "    "))
     (let ((start (point)) (end (save-excursion (end-of-line) (point))) (flag t))
       (ignore-errors
         (while flag
-          (message "at %d %d" start end)
+          ;(message "at %d %d" start end)
           (next-line)
           (if (progn
                 (beginning-of-line)
