@@ -10,16 +10,20 @@
           do (define-key m (macroexpand `(kbd ,key)) command))
     m))
 
-(defconst +eslide-separator+ "^----$")
+(defconst +eslide-separator+ "^----\n")
 (defvar eslide-slide-source nil)
 (defvar eslide-current-slide-overlay nil)
 
-(defun eslide-get-buffers nil
-  "Return a cons cell containing the display buffer and the message buffer."
+(defvar eslide-buffers
   (loop for i in (list (get-buffer-create "*ESlide Show*")
                        (get-buffer-create "*ESlide Notes*"))
-        do (with-current-buffer i (use-local-map eslide-control-map))
-        collect i))
+        do (with-current-buffer i
+             (use-local-map eslide-control-map)
+             (setq buffer-read-only t))
+             collect i))
+
+(with-current-buffer (car eslide-buffers)
+  (buffer-face-set '(variable-pitch :height 4.0 :family "Times New Roman")))
 
 (defun eslide-start nil
   "Start the slideshow using the current buffer as the slide source"
@@ -31,15 +35,18 @@
   (setq eslide-current-slide-overlay
         (make-overlay (point-min) (point-min) eslide-slide-source))
   (overlay-put eslide-current-slide-overlay 'face '(:background "#040"))
-  (eslide-get-buffers)
+  eslide-buffers
   (eslide-next))
 
 (define-derived-mode eslide-edit-mode fundamental-mode "ESlide[Edit]"
   "Edit eslides"
-  (setq font-lock-keywords (list +eslide-separator+))
+  (setq font-lock-defaults (list (list +eslide-separator+) t))
   (define-key eslide-edit-mode-map (kbd "C-c C-c") #'eslide-start)
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
   (define-key eslide-edit-mode-map (kbd "C-c C-p") #'eslide-prev))
+
+(eval-when-compile
+  (add-to-list 'auto-mode-alist (cons ".esl$" 'eslide-edit-mode)))
 
 (defun eslide-get-slide-near (pos)
   (save-excursion
@@ -77,20 +84,30 @@
   (with-current-buffer buffer
     (save-excursion
       (goto-char (point-max))
-      (insert (apply #'format (cons (concat format "\n") args)))
+      (let ((inhibit-read-only t))
+        (insert (apply #'format (cons (concat format "\n") args))))
       (goto-char (point-max)))))
 
 (defun eslide-show-note (format &rest args)
-  (destructuring-bind (show notes) (eslide-get-buffers)
+  (destructuring-bind (show notes) eslide-buffers
     (apply #'eslide--append-to-buffer (list* notes format args))
-    (loop for win in (get-buffer-window-list notes)
-          do (set-window-point win (with-current-buffer notes (point-max))))))
+    (with-current-buffer notes
+      (loop for win in (get-buffer-window-list notes)
+            do (set-window-point win (point-max)))
+      (goto-char (point-max)))))
 
 (defun eslide-show-slide (text)
-  (destructuring-bind (show notes) (eslide-get-buffers)
+  (destructuring-bind (show notes) eslide-buffers
     (with-current-buffer show
-      (delete-region (point-min) (point-max))
-      (insert text))))
+      (let ((inhibit-read-only t))
+        (delete-region (point-min) (point-max))
+        (insert text)))))
+
+(defmacro with-string-buffer (string &rest forms)
+  `(with-temp-buffer
+     (insert ,string)
+     ,@forms
+     (buffer-substring (point-min) (point-max))))
 
 (defun eslide-move (direction)
   "Move next slide in positive or negative DIRECTION"
@@ -104,8 +121,34 @@
              (ignore-errors (skip-chars-forward "-\n"))))
       (eslide-update-current-slide (point)))
     (let ((text (eslide-get-current-slide-text)))
-      (eslide-show-note "current: %s" text)
-      (eslide-show-slide text))))
+      (eslide-show-note "current: %s"
+                        (eslide-format-note text
+                                            'font-lock-keyword-face))
+      (eslide-show-slide text))
+    (let ((next
+           (destructuring-bind (start . end)
+               (eslide-get-slide-near
+                (with-current-buffer eslide-slide-source
+                  (save-excursion
+                    (goto-char (overlay-end eslide-current-slide-overlay))
+                    (skip-chars-forward "-\n ")
+                    (point))))
+             (buffer-substring-no-properties start end))))
+      (eslide-show-note "next: %s"
+                        (eslide-format-note next
+                                            'font-lock-type-face)))))
+
+(defun eslide-format-note (note face)
+  (with-string-buffer
+   (propertize note 'face (list :inherit face))
+   (goto-char (point-min))
+   (insert  "\n")
+   (ignore-errors
+     (while t
+       (beginning-of-line)
+       (insert "  ")
+       (next-line)))))
+
 
 (defun eslide-next nil
   (interactive)
