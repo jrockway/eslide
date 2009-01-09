@@ -46,7 +46,7 @@
   "Edit eslides"
   (setq font-lock-defaults (list
      (list +eslide-separator+
-           '("^    " . eslide-code-face))
+           '("^\s{4}" . eslide-code-face))
      t))
   (define-key eslide-edit-mode-map (kbd "C-c C-c") #'eslide-start)
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
