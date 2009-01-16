@@ -52,7 +52,7 @@
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
   (define-key eslide-edit-mode-map (kbd "C-c C-p") #'eslide-prev))
 
-(eval-when-compile
+(eval-at-startup
   (add-to-list 'auto-mode-alist (cons ".esl$" 'eslide-edit-mode)))
 
 (defun eslide-get-slide-near (pos)
@@ -109,7 +109,11 @@
     (with-current-buffer show
       (let ((inhibit-read-only t))
         (delete-region (point-min) (point-max))
-        (insert text)))))
+        (insert text)
+        (loop for win in (get-buffer-window-list show)
+              do (set-window-point win (point-max)))
+        (goto-char (point-max))
+        (recenter -1)))))
 
 (defmacro with-string-buffer (string &rest forms)
   `(with-temp-buffer
@@ -164,8 +168,10 @@
                      (format-one-chunk)))))
 
 (defun eslide-move (direction)
-  "Move next slide in positive or negative DIRECTION"
+  "Move next slide in positive or negative DIRECTION."
   (with-current-buffer eslide-slide-source
+
+    ;; find slide
     (save-excursion
       (cond ((< direction 0)
              (goto-char (overlay-start eslide-current-slide-overlay))
@@ -174,9 +180,14 @@
              (goto-char (overlay-end eslide-current-slide-overlay))
              (ignore-errors (skip-chars-forward "-\n"))))
       (eslide-update-current-slide (point)))
+
+    ;; show time in notes window
     (eslide-show-note "time: %s"
       (eslide-format-note
-       (format "%d" (/ (- (cadr (current-time)) eslide-start-time) 60)) 'font-lock-warning-face))
+       (format "%d" (/ (- (cadr (current-time)) eslide-start-time) 60))
+       'font-lock-warning-face))
+
+    ;; show current/next slide
     (let ((text (eslide-get-current-slide-text)))
       (eslide-show-note "current: %s"
                         (eslide-format-note text
