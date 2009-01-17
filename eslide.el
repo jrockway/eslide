@@ -99,7 +99,7 @@
   (destructuring-bind (show notes) eslide-buffers
     (apply #'eslide--append-to-buffer (list* notes format args))
     (with-current-buffer notes
-      (loop for win in (get-buffer-window-list notes)
+      (loop for win in (get-buffer-window-list notes nil t)
             do (set-window-point win (point-max)))
       (goto-char (point-max))
       (recenter -1))))
@@ -110,7 +110,7 @@
       (let ((inhibit-read-only t))
         (delete-region (point-min) (point-max))
         (insert text)
-        (loop for win in (get-buffer-window-list show)
+        (loop for win in (get-buffer-window-list show nil t)
               do (set-window-point win (point-max)))
         (goto-char (point-max))
         (recenter -1)))))
