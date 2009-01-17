@@ -181,6 +181,10 @@
              (ignore-errors (skip-chars-forward "-\n"))))
       (eslide-update-current-slide (point)))
 
+    (with-current-buffer (cadr eslide-buffers)
+      (let ((inhibit-read-only t))
+        (delete-region (point-min) (point-max))))
+
     ;; show time in notes window
     (eslide-show-note "time: %s"
       (eslide-format-note
