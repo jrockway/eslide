@@ -27,6 +27,7 @@
 
 (defface eslide-code '((t
                         (:underline "green" :background "grey20"))) "indented code face")
+
 (defvar eslide-buffers
   (loop for i in (list (get-buffer-create "*ESlide Show*")
                        (get-buffer-create "*ESlide Notes*"))
@@ -34,6 +35,13 @@
              (use-local-map eslide-control-map)
              (setq buffer-read-only t))
         collect i))
+
+(defmacro build-with-<foo>-macro (macro-name buffer-getter-form)
+  `(defmacro ,macro-name (&body body)
+     `(with-current-buffer ,,buffer-getter-form ,@body)))
+
+(macroexpand '(build-with-<foo>-macro with-show-buffer (car eslide-buffers)))
+
 
 (with-current-buffer (car eslide-buffers)
   (buffer-face-set '(:height 2.0)))
@@ -141,7 +149,7 @@
      (while (< (point) (point-max))
        (beginning-of-line)
        (insert "  ")
-       (next-line)
+       (forward-line)
        (end-of-line)))))
 
 (defun fontify-code (code)
@@ -159,7 +167,7 @@
       (ignore-errors
         (while flag
           ;(message "at %d %d" start end)
-          (next-line)
+          (forward-line)
           (if (progn
                 (beginning-of-line)
                 (looking-at +code-start+))
@@ -171,7 +179,7 @@
         (insert code)
 ;        (put-text-property start (point) 'face '(fixed-pitch)))))
 )))
-  (next-line))
+  (forward-line))
 
 (defun eslide-format-slide (slide)
   (with-string-buffer slide
