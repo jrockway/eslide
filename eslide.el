@@ -141,8 +141,10 @@
       (font-lock-fontify-buffer)
       (setq buffer-file-name nil)))
 
+(defconst +code-start+ "  ")
+
 (defun format-one-chunk nil
-  (when (progn (beginning-of-line) (looking-at "    "))
+  (when (progn (beginning-of-line) (looking-at +code-start+))
     (let ((start (point)) (end (save-excursion (end-of-line) (point))) (flag t))
       (ignore-errors
         (while flag
@@ -150,7 +152,7 @@
           (next-line)
           (if (progn
                 (beginning-of-line)
-                (looking-at "    "))
+                (looking-at +code-start+))
               (setq end (progn (end-of-line) (point)))
             (setq flag nil))))
       (let ((code (fontify-code (buffer-substring start end))))
