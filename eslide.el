@@ -3,10 +3,14 @@
 (defvar eslide-control-map
   (let ((m (make-sparse-keymap)))
     (loop for (key . command) in
-          '(("n"   . eslide-next)
-            ("SPC" . eslide-next)
-            ("p"   . eslide-prev)
-            ("DEL" . eslide-prev))
+          `(("n"       . eslide-next)
+            ("SPC"     . eslide-next)
+            ("<right>" . eslide-next)
+            ("p"       . eslide-prev)
+            ("DEL"     . eslide-prev)
+            ("<left>"  . eslide-prev)
+            ("<prior>" . ,(lambda () (interactive) (scroll-down 1)))
+            ("<next>" . ,(lambda () (interactive) (scroll-up 1))))
           do (define-key m (macroexpand `(kbd ,key)) command))
     m))
 
