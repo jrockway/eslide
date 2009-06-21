@@ -10,7 +10,13 @@
             ("DEL"     . eslide-prev)
             ("<left>"  . eslide-prev)
             ("<prior>" . ,(lambda () (interactive) (scroll-down 1)))
-            ("<next>" . ,(lambda () (interactive) (scroll-up 1))))
+            ("<next>" . ,(lambda () (interactive) (scroll-up 1)))
+            ("+" . eslide-text-scale-increase)
+            ("=" . eslide-text-scale-increase)
+            ("<XF86AudioRaiseVolume>" . eslide-text-scale-increase)
+            ("-" . eslide-text-scale-decrease)
+            ("_" . eslide-text-scale-decrease)
+            ("<XF86AudioLowerVolume>" . eslide-text-scale-decrease))
           do (define-key m (macroexpand `(kbd ,key)) command))
     m))
 
@@ -223,5 +229,15 @@
 (defun eslide-prev nil
   (interactive)
   (eslide-move -1))
+
+(defun eslide-text-scale-increase nil
+  (interactive)
+  (with-current-buffer (car eslide-buffers)
+    (text-scale-increase 1)))
+
+(defun eslide-text-scale-decrease nil
+  (interactive)
+  (with-current-buffer (car eslide-buffers)
+    (text-scale-decrease 1)))
 
 (provide 'eslide)
