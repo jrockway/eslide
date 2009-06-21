@@ -218,4 +218,4 @@
   (interactive)
   (eslide-move -1))
 
-
+(provide 'eslide)
