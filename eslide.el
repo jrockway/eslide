@@ -1,5 +1,8 @@
 ;; eslide
 ; (setq eslide-edit-mode-map (make-sparse-keymap))
+
+(defgroup eslide nil "Eslide")
+
 (defvar eslide-control-map
   (let ((m (make-sparse-keymap)))
     (loop for (key . command) in
@@ -39,9 +42,6 @@
 (defmacro build-with-<foo>-macro (macro-name buffer-getter-form)
   `(defmacro ,macro-name (&body body)
      `(with-current-buffer ,,buffer-getter-form ,@body)))
-
-(macroexpand '(build-with-<foo>-macro with-show-buffer (car eslide-buffers)))
-
 
 (with-current-buffer (car eslide-buffers)
   (buffer-face-set '(:height 2.0)))
@@ -179,7 +179,7 @@
         (insert code)
 ;        (put-text-property start (point) 'face '(fixed-pitch)))))
 )))
-  (forward-line))
+  (next-line))
 
 (defun eslide-format-slide (slide)
   (with-string-buffer slide
