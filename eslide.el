@@ -185,30 +185,25 @@ Optional argument WHICH controls which buffers to return and in what order; curr
 (defconst +code-start+ "  ")
 
 (defun format-one-chunk nil
-  (when (progn (beginning-of-line) (looking-at +code-start+))
-    (let ((start (point)) (end (save-excursion (end-of-line) (point))) (flag t))
-      (ignore-errors
-        (while flag
-          ;(message "at %d %d" start end)
-          (forward-line)
-          (if (progn
-                (beginning-of-line)
-                (looking-at +code-start+))
-              (setq end (progn (end-of-line) (point)))
-            (setq flag nil))))
-      (let ((code (fontify-code (buffer-substring start end))))
-        (goto-char start)
-        (delete-region start end)
-        (insert code)
-;        (put-text-property start (point) 'face '(fixed-pitch)))))
-)))
-  (next-line))
+  (cond ((progn (beginning-of-line) (looking-at +code-start+))
+         (let ((start (point)) (end (save-excursion (end-of-line) (point))) done)
+           (while (and (not done) (= 0 (forward-line)))
+             (if (progn (beginning-of-line) (looking-at +code-start+))
+                 (setq end (progn (end-of-line) (point)))
+               (setq done t)))
+           (let ((code (fontify-code (buffer-substring start end))))
+             (goto-char start)
+             (delete-region start end)
+             (insert code)
+                                        ;        (put-text-property start (point) 'face '(fixed-pitch)))))
+             )))))
+
 
 (defun eslide-format-slide (slide)
+  "Format the slide SLIDE."
   (with-string-buffer slide
     (goto-char (point-min))
-    (ignore-errors (while t
-                     (format-one-chunk)))))
+    (while (= 0 (forward-line)) (format-one-chunk))))
 
 (defun eslide-move (direction)
   "Move next slide in positive or negative DIRECTION."
