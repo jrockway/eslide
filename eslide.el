@@ -99,16 +99,12 @@ Optional argument WHICH controls which buffers to return and in what order; curr
 (defun eslide-get-slide-near (pos)
   (save-excursion
     (goto-char pos)
-    (let ((start (save-excursion (or
-                                  (and
-                                   (re-search-backward +eslide-separator+ nil t)
-                                   (match-end 0))
-                                  (point-min))))
-          (end (save-excursion (or
-                                (and
-                                 (re-search-forward +eslide-separator+ nil t)
-                                 (match-beginning 0))
-                                (point-max)))))
+    (let ((start (save-excursion
+                   (or (and (re-search-backward +eslide-separator+ nil t) (match-end 0))
+                       (point-min))))
+          (end (save-excursion
+                 (or (and (re-search-forward +eslide-separator+ nil t) (match-beginning 0))
+                     (point-max)))))
       (cons start end))))
 
 (defun eslide-update-current-slide (&optional pos)
