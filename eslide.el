@@ -31,24 +31,48 @@
 (defface eslide-code '((t
                         (:underline "green" :background "grey20"))) "indented code face")
 
-(defvar eslide-buffers
-  (loop for i in (list (get-buffer-create "*ESlide Show*")
-                       (get-buffer-create "*ESlide Notes*"))
-        do (with-current-buffer i
-             (use-local-map eslide-control-map)
-             (setq buffer-read-only t))
-        collect i))
+(defvar eslide-buffers nil)
+
+(defun eslide-ensure-buffers (&optional rebuild)
+  "Setup the variable `eslide-buffers'.
+Optional argument REBUILD controls rebuilding buffers even when they already exist."
+  (when (not (reduce (lambda (&optional a b) (and (boundp a) (boundp b) a b))
+                    (loop for buf in eslide-buffers collect (buffer-live-p buf))))
+    (setf eslide-buffers nil))
+  (when (or (not eslide-buffers) rebuild)
+    (setf eslide-buffers
+          (loop for i in (list (get-buffer-create "*ESlide Show*")
+                               (get-buffer-create "*ESlide Notes*"))
+                do (with-current-buffer i
+                     (use-local-map eslide-control-map)
+                     (setq buffer-read-only t))
+                collect i))
+
+    (with-current-buffer (car eslide-buffers)
+      (buffer-face-set '(:height 2.0)))))
+
+(defun eslide-buffers (&optional which) ;; the which is a lie.
+  "Return all eslide buffers.
+Optional argument WHICH controls which buffers to return and in what order; currently \"show\" and \"notes\" are known."
+  (eslide-ensure-buffers)
+  eslide-buffers)
+
+(defun eslide-notes ()
+  (eslide-ensure-buffers)
+  (cadr eslide-buffers))
+
+(defun eslide-show ()
+  (eslide-ensure-buffers)
+  (car eslide-buffers))
 
 (defmacro build-with-<foo>-macro (macro-name buffer-getter-form)
   `(defmacro ,macro-name (&body body)
      `(with-current-buffer ,,buffer-getter-form ,@body)))
 
-(with-current-buffer (car eslide-buffers)
-  (buffer-face-set '(:height 2.0)))
-
 (defun eslide-start nil
-  "Start the slideshow using the current buffer as the slide source"
+  "Start the slideshow using the current buffer as the slide source."
   (interactive)
+  (eslide-ensure-buffers)
   (setq eslide-slide-source (current-buffer))
   (goto-char (point-min))
   (when eslide-current-slide-overlay
@@ -56,7 +80,6 @@
   (setq eslide-current-slide-overlay
         (make-overlay (point-min) (point-min) eslide-slide-source))
   (overlay-put eslide-current-slide-overlay 'face '(:background "#040"))
-  eslide-buffers
   (setq eslide-start-time (cadr (current-time)))
   (eslide-next))
 
@@ -114,7 +137,7 @@
       (goto-char (point-max)))))
 
 (defun eslide-show-note (format &rest args)
-  (destructuring-bind (show notes) eslide-buffers
+  (destructuring-bind (show notes) (eslide-buffers '(show notes))
     (apply #'eslide--append-to-buffer (list* notes format args))
     (with-current-buffer notes
       (loop for win in (get-buffer-window-list notes nil t)
@@ -123,7 +146,7 @@
       (recenter -1))))
 
 (defun eslide-show-slide (text)
-  (destructuring-bind (show notes) eslide-buffers
+  (destructuring-bind (show notes) (eslide-buffers '(show notes))
     (with-current-buffer show
       (let ((inhibit-read-only t))
         (delete-region (point-min) (point-max))
@@ -201,7 +224,7 @@
              (ignore-errors (skip-chars-forward "-\n"))))
       (eslide-update-current-slide (point)))
 
-    (with-current-buffer (cadr eslide-buffers)
+    (with-current-buffer (eslide-notes)
       (let ((inhibit-read-only t))
         (delete-region (point-min) (point-max))))
 
@@ -240,12 +263,12 @@
 
 (defun eslide-text-scale-increase nil
   (interactive)
-  (with-current-buffer (car eslide-buffers)
+  (with-current-buffer (eslide-show)
     (text-scale-increase 1)))
 
 (defun eslide-text-scale-decrease nil
   (interactive)
-  (with-current-buffer (car eslide-buffers)
+  (with-current-buffer (eslide-show)
     (text-scale-decrease 1)))
 
 (provide 'eslide)
