@@ -57,7 +57,7 @@ Optional argument REBUILD controls rebuilding buffers even when they already exi
                 collect i))
 
     (with-current-buffer (car eslide-buffers)
-      (buffer-face-set '(:height 2.0)))))
+      (variable-pitch-mode 1))))
 
 (defun eslide-buffers (&optional which) ;; the which is a lie.
   "Return all eslide buffers.
@@ -188,7 +188,7 @@ Optional argument WHICH controls which buffers to return and in what order; curr
 
 (defconst +code-start+ "  ")
 
-(defun format-one-chunk nil
+(defun format-one-chunk ()
   (cond ((progn (beginning-of-line) (looking-at +code-start+))
          (let ((start (point)) (end (save-excursion (end-of-line) (point))) done)
            (while (and (not done) (= 0 (forward-line)))
@@ -199,9 +199,9 @@ Optional argument WHICH controls which buffers to return and in what order; curr
              (goto-char start)
              (delete-region start end)
              (insert code)
-                                        ;        (put-text-property start (point) 'face '(fixed-pitch)))))
-             )))))
-
+             ;(put-text-property start (point) 'face '(fixed-pitch)))))
+             )))
+        (t nil)))
 
 (defun eslide-format-slide (slide)
   "Format the slide SLIDE."
@@ -269,5 +269,57 @@ Optional argument WHICH controls which buffers to return and in what order; curr
   (interactive)
   (with-current-buffer (eslide-show)
     (text-scale-decrease 1)))
+
+(defun eslide-narrowest-window (buffer)
+  (car (get-buffer-window-list buffer nil t))) ;;; XXX not really
+
+(defun eslide-shortest-window (buffer)
+  (car (get-buffer-window-list buffer nil t))) ;;; XXX not really
+
+(defun eslide-text-scale (size)
+  (text-scale-increase 0)
+  (text-scale-increase size))
+
+(defmacro* with-eslide-temp-show-buffer (&body forms)
+  "Execute FORMS in a temp buffer (with special eslide settings in effect)."
+  (declare (indent 0))
+  `(with-temp-buffer
+     (variable-pitch-mode 1)
+     ,@forms))
+
+(defun eslide-buffer-fits-on-one-screen-p (window)
+  "Return T if current buffer when displayed on WINDOW will not need to scroll."
+  (save-window-excursion
+    (set-window-buffer window (current-buffer))
+    (ignore-errors (while t (scroll-down)))
+    (goto-char (point-min))
+    (block nil
+      (condition-case e (scroll-up)
+        (error (return t)))
+      (return nil))))
+
+(defun eslide-no-lines-wrap-p (window)
+  "Return T if no lines in current buffer wrap when displayed in WINDOW."
+  (with-selected-window window
+    (= (count-lines (point-min) (point-max))
+       (count-screen-lines (point-min) (point-max) nil window))))
+
+(defun* eslide-maximizing-text-scale (predicate window &optional (max 30))
+  "Increase text-scale until PREDICATE returns NIL, return max scale where PREDICATE returned nil.  Operate on text of BUFFER as if it were displayed in WINDOW."
+  (or (loop for scale from -10 to max
+            do (eslide-text-scale scale)
+            when (not (funcall predicate window))
+            return (1- scale)) max))
+
+(defun eslide-scale-for-slide (slide)
+  "Return the maximum text-scale value for SLIDE where no lines wrap and where every line is visible in every ESlide Show window."
+  (with-eslide-temp-show-buffer
+    (insert slide)
+    (variable-pitch-mode)
+    (let* ((show (eslide-show))
+           (narrowest (eslide-narrowest-window show))
+           (shortest (eslide-shortest-window show))
+           (max-size-width (eslide-maximizing-text-scale #'eslide-no-lines-wrap-p narrowest)))
+      (eslide-maximizing-text-scale #'eslide-buffer-fits-on-one-screen-p shortest max-size-width))))
 
 (provide 'eslide)
