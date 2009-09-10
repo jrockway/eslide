@@ -25,14 +25,18 @@
     m))
 
 (defconst +eslide-separator+ "^----\n")
+(defconst +code-start+ "    ")
 (defvar eslide-slide-source nil)
 (defvar eslide-current-slide-overlay nil)
 (defvar eslide-start-time nil)
+(defvar eslide-fixed-overlays nil)
+(defvar eslide-current-subtitle "")
+(defvar eslide-buffers nil)
 
 (defface eslide-code '((t
                         (:underline "green" :background "grey20"))) "indented code face")
 
-(defvar eslide-buffers nil)
+(defface eslide-subtitle '((t (:foreground "yellow"))) "subtitle face")
 
 (defun eslide-post-command-hook ()
   (if (equal (buffer-name (current-buffer)) "*ESlide Show*")
@@ -178,8 +182,6 @@ Optional argument WHICH controls which buffers to return and in what order; curr
        (forward-line)
        (end-of-line)))))
 
-(defvar eslide-fixed-overlays nil)
-
 (defun eslide-fixed-overlay (start end)
   "Add an overlay to make the font fixed width.
 Argument START sdfsdf.
@@ -196,13 +198,17 @@ Argument END sdfasdf."
       (font-lock-fontify-buffer)
       (setq buffer-file-name nil)))
 
-(defconst +code-start+ "    ")
-
 (defun eslide-code-line-p ()
   "Determine if the current line is a code line."
   (save-excursion
     (beginning-of-line)
     (looking-at +code-start+)))
+
+(defun eslide-subtitle-line-p ()
+  "Determine if the current line is a subtitle line."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at "s: ")))
 
 (defun eslide-format-one-chunk ()
   "Starting with the current line, format in place."
@@ -224,20 +230,36 @@ Argument END sdfasdf."
                (replace-match " "))
              (eslide-fixed-overlay (point-min) (point-max))
              (goto-char (point-max)))))
+        ((eslide-subtitle-line-p)
+         (setf eslide-current-subtitle
+               (concat eslide-current-subtitle " "
+                       (buffer-substring
+                        (+ (line-beginning-position) 3) ;; the 3 is "s: "b
+                        (line-end-position))))
+         (delete-region (line-beginning-position) (line-end-position))
+         (when (looking-at "\n") (delete-char 1)))
         (t nil)))
 
 (defun eslide-format-slide ()
   "Format the slide."
   (goto-char (point-min))
-  (loop do (eslide-format-one-chunk) while (= 0 (forward-line))))
+  (loop do (eslide-format-one-chunk) while (= 0 (forward-line)))
+  (when (> (length eslide-current-subtitle) 1)
+    (insert (propertize eslide-current-subtitle 'face '(eslide-subtitle)))
+    ))
 
-(defun eslide-move (direction)
-  "Move next slide in positive or negative DIRECTION."
-
+(defun eslide-cleanup-from-last-slide ()
+  "Cleanup globals."
   ;; kill overlays
   (loop for o in (pop eslide-fixed-overlays) do (delete-overlay o))
   (setf eslide-fixed-overlays nil)
 
+  ;; kill subtitles
+  (setf eslide-current-subtitle ""))
+
+(defun eslide-move (direction)
+  "Move next slide in positive or negative DIRECTION."
+  (eslide-cleanup-from-last-slide)
   (with-current-buffer eslide-slide-source
 
     ;; find slide
