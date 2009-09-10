@@ -154,10 +154,9 @@ Optional argument WHICH controls which buffers to return and in what order; curr
     (let ((inhibit-read-only t))
       (delete-region (point-min) (point-max))
       (insert text)
+      (eslide-format-slide)
       (text-scale-increase 0)
       (text-scale-increase (eslide-scale-for-slide text))
-      (loop for win in (get-buffer-window-list (eslide-show) nil t)
-            do (set-window-point win (point-max)))
       (goto-char (point-min)))))
 
 (defmacro with-string-buffer (string &rest forms)
@@ -179,38 +178,66 @@ Optional argument WHICH controls which buffers to return and in what order; curr
        (forward-line)
        (end-of-line)))))
 
+(defvar eslide-fixed-overlays nil)
+
+(defun eslide-fixed-overlay (start end)
+  "Add an overlay to make the font fixed width.
+Argument START sdfsdf.
+Argument END sdfasdf."
+  (let ((o (make-overlay start end (eslide-show))))
+    (push o eslide-fixed-overlays)
+    (overlay-put o 'face '(:family "DejaVu Sans Mono"))))
+
 (defun fontify-code (code)
+  "Fontify CODE block and return result."
   (with-string-buffer code
-      (setq buffer-file-name "/tmp/eslide")
+      (setq buffer-file-name "/tmp/eslide.pl")
       (cperl-mode)
       (font-lock-fontify-buffer)
       (setq buffer-file-name nil)))
 
-(defconst +code-start+ "  ")
+(defconst +code-start+ "    ")
 
-(defun format-one-chunk ()
-  (cond ((progn (beginning-of-line) (looking-at +code-start+))
-         (let ((start (point)) (end (save-excursion (end-of-line) (point))) done)
-           (while (and (not done) (= 0 (forward-line)))
-             (if (progn (beginning-of-line) (looking-at +code-start+))
-                 (setq end (progn (end-of-line) (point)))
-               (setq done t)))
-           (let ((code (fontify-code (buffer-substring start end))))
-             (goto-char start)
-             (delete-region start end)
-             (insert code)
-             ;(put-text-property start (point) 'face '(fixed-pitch)))))
-             )))
+(defun eslide-code-line-p ()
+  "Determine if the current line is a code line."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at +code-start+)))
+
+(defun eslide-format-one-chunk ()
+  "Starting with the current line, format in place."
+  (cond ((eslide-code-line-p)
+         (let* ((start (line-beginning-position))
+                (end (or (apply #'max (loop collect (line-end-position)
+                                            while (and (eslide-code-line-p) (= 0 (forward-line)))))
+                         (line-ending-position)))
+                (code (buffer-substring start end))
+                (fontified-code (fontify-code code)))
+           (goto-char start)
+           (delete-region start end)
+           (save-restriction
+             (narrow-to-region start (point))
+             (goto-char (point-min))
+             (insert fontified-code)
+             (goto-char (point-min))
+             (while (re-search-forward (concat "^" +code-start+) nil t)
+               (replace-match " "))
+             (eslide-fixed-overlay (point-min) (point-max))
+             (goto-char (point-max)))))
         (t nil)))
 
-(defun eslide-format-slide (slide)
-  "Format the slide SLIDE."
-  (with-string-buffer slide
-    (goto-char (point-min))
-    (while (= 0 (forward-line)) (format-one-chunk))))
+(defun eslide-format-slide ()
+  "Format the slide."
+  (goto-char (point-min))
+  (loop do (eslide-format-one-chunk) while (= 0 (forward-line))))
 
 (defun eslide-move (direction)
   "Move next slide in positive or negative DIRECTION."
+
+  ;; kill overlays
+  (loop for o in (pop eslide-fixed-overlays) do (delete-overlay o))
+  (setf eslide-fixed-overlays nil)
+
   (with-current-buffer eslide-slide-source
 
     ;; find slide
@@ -238,7 +265,7 @@ Optional argument WHICH controls which buffers to return and in what order; curr
       (eslide-show-note "current: %s"
                         (eslide-format-note text
                                             'font-lock-keyword-face))
-      (eslide-show-slide (eslide-format-slide text)))
+      (eslide-show-slide text))
     (let ((next
            (destructuring-bind (start . end)
                (eslide-get-slide-near
@@ -304,12 +331,13 @@ Optional argument WHICH controls which buffers to return and in what order; curr
     (= (count-lines (point-min) (point-max))
        (count-screen-lines (point-min) (point-max) nil window))))
 
-(defun* eslide-maximizing-text-scale (predicate window &optional (max 30))
+(defun* eslide-maximizing-text-scale (predicate window &optional (max 20))
   "Increase text-scale until PREDICATE returns NIL, return max scale where PREDICATE returned nil.  Operate on text of BUFFER as if it were displayed in WINDOW."
-  (or (loop for scale from -10 to max
-            do (eslide-text-scale scale)
-            when (not (funcall predicate window))
-            return (1- scale)) max))
+  (cond ((not (window-live-p window)) 0)
+        (t (or (loop for scale from 0 to max
+                     do (eslide-text-scale scale)
+                     when (not (funcall predicate window))
+                     return (1- scale)) max))))
 
 (defun eslide-scale-for-slide (slide)
   "Return the maximum text-scale value for SLIDE where no lines wrap and where every line is visible in every ESlide Show window."
