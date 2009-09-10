@@ -19,7 +19,8 @@
             ("<XF86AudioRaiseVolume>" . eslide-text-scale-increase)
             ("-" . eslide-text-scale-decrease)
             ("_" . eslide-text-scale-decrease)
-            ("<XF86AudioLowerVolume>" . eslide-text-scale-decrease))
+            ("<XF86AudioLowerVolume>" . eslide-text-scale-decrease)
+            )
           do (define-key m (macroexpand `(kbd ,key)) command))
     m))
 
