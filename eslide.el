@@ -95,12 +95,12 @@ Optional argument WHICH controls which buffers to return and in what order; curr
   (setq eslide-start-time (cadr (current-time)))
   (eslide-next))
 
+(defvar eslide-keywords `(,+eslide-separator+))
+
 (define-derived-mode eslide-edit-mode fundamental-mode "ESlide[Edit]"
   "Edit eslides"
-  (setq font-lock-defaults (list
-     (list +eslide-separator+
-           '("^\s{4}" . eslide-code-face))
-     t))
+  (setq font-lock-defaults '(eslide-keywords nil ))
+
   (define-key eslide-edit-mode-map (kbd "C-c C-c") #'eslide-start)
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
   (define-key eslide-edit-mode-map (kbd "C-c C-p") #'eslide-prev))
