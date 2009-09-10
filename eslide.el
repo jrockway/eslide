@@ -34,6 +34,13 @@
 
 (defvar eslide-buffers nil)
 
+(defun eslide-post-command-hook ()
+  (if (equal (buffer-name (current-buffer)) "*ESlide Show*")
+      (internal-show-cursor nil nil)
+    (internal-show-cursor nil t)))
+
+(add-hook 'post-command-hook #'eslide-post-command-hook)
+
 (defun eslide-ensure-buffers (&optional rebuild)
   "Setup the variable `eslide-buffers'.
 Optional argument REBUILD controls rebuilding buffers even when they already exist."
@@ -143,15 +150,15 @@ Optional argument WHICH controls which buffers to return and in what order; curr
       (recenter -1))))
 
 (defun eslide-show-slide (text)
-  (destructuring-bind (show notes) (eslide-buffers '(show notes))
-    (with-current-buffer show
-      (let ((inhibit-read-only t))
-        (delete-region (point-min) (point-max))
-        (insert text)
-        (loop for win in (get-buffer-window-list show nil t)
-              do (set-window-point win (point-max)))
-        (goto-char (point-max))
-        (recenter -1)))))
+  (with-current-buffer (eslide-show)
+    (let ((inhibit-read-only t))
+      (delete-region (point-min) (point-max))
+      (insert text)
+      (text-scale-increase 0)
+      (text-scale-increase (eslide-scale-for-slide text))
+      (loop for win in (get-buffer-window-list (eslide-show) nil t)
+            do (set-window-point win (point-max)))
+      (goto-char (point-min)))))
 
 (defmacro with-string-buffer (string &rest forms)
   `(with-temp-buffer
