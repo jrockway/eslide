@@ -208,7 +208,7 @@ Argument END sdfasdf."
   "Determine if the current line is a subtitle line."
   (save-excursion
     (beginning-of-line)
-    (looking-at "s: ")))
+    (looking-at "s:")))
 
 (defun eslide-format-one-chunk ()
   "Starting with the current line, format in place."
@@ -234,7 +234,7 @@ Argument END sdfasdf."
          (setf eslide-current-subtitle
                (concat eslide-current-subtitle " "
                        (buffer-substring
-                        (+ (line-beginning-position) 3) ;; the 3 is "s: "b
+                        (+ (line-beginning-position) 2) ;; the 3 is "s:"
                         (line-end-position))))
          (delete-region (line-beginning-position) (line-end-position))
          (when (looking-at "\n") (delete-char 1)))
@@ -358,13 +358,23 @@ Argument END sdfasdf."
   (cond ((not (window-live-p window)) 0)
         (t (or (loop for scale from 0 to max
                      do (eslide-text-scale scale)
-                     when (not (funcall predicate window))
-                     return (1- scale)) max))))
+;                     do (message "scale: %d" scale)
+;                     do (sit-for .1)
+                     if (not (funcall predicate window))
+                     return (1- scale)
+                     else
+;                     do (message "still ok")
+                     ) max))))
 
 (defun eslide-scale-for-slide (slide)
   "Return the maximum text-scale value for SLIDE where no lines wrap and where every line is visible in every ESlide Show window."
   (with-eslide-temp-show-buffer
     (insert slide)
+    (goto-char (point-min))
+    (loop do (progn (goto-char (line-beginning-position))
+                    (when (looking-at "s:")
+                      (kill-line 2)))
+          while (zerop (forward-line)))
     (variable-pitch-mode)
     (let* ((show (eslide-show))
            (narrowest (eslide-narrowest-window show))
