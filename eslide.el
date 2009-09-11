@@ -36,7 +36,7 @@
 (defface eslide-code '((t
                         (:underline "green" :background "grey20"))) "indented code face")
 
-(defface eslide-subtitle '((t (:foreground "yellow"))) "subtitle face")
+(defface eslide-subtitle '((t (:foreground "yellow" :height 200))) "subtitle face")
 
 (defun eslide-post-command-hook ()
   (if (equal (buffer-name (current-buffer)) "*ESlide Show*")
