@@ -1,6 +1,8 @@
 ;; eslide
 ; (setq eslide-edit-mode-map (make-sparse-keymap))
 
+;(set-fontset-font "fontset-startup" '(#x00ff . #xffff) "Sazanami Mincho" nil 'prepend)
+
 (defgroup eslide nil "Eslide")
 
 (defvar eslide-control-map
@@ -216,7 +218,7 @@ Argument END sdfasdf."
          (let* ((start (line-beginning-position))
                 (end (or (apply #'max (loop collect (line-end-position)
                                             while (and (eslide-code-line-p) (= 0 (forward-line)))))
-                         (line-ending-position)))
+                         (line-end-position)))
                 (code (buffer-substring start end))
                 (fontified-code (fontify-code code)))
            (goto-char start)
@@ -362,7 +364,7 @@ Argument END sdfasdf."
 ;                     do (sit-for .1)
                      if (not (funcall predicate window))
                      return (1- scale)
-                     else
+;                     else
 ;                     do (message "still ok")
                      ) max))))
 
