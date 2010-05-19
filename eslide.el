@@ -107,8 +107,7 @@ Optional argument WHICH controls which buffers to return and in what order; curr
   (define-key eslide-edit-mode-map (kbd "C-c C-n") #'eslide-next)
   (define-key eslide-edit-mode-map (kbd "C-c C-p") #'eslide-prev))
 
-(eval-at-startup
-  (add-to-list 'auto-mode-alist (cons ".esl$" 'eslide-edit-mode)))
+(add-to-list 'auto-mode-alist (cons ".esl$" 'eslide-edit-mode))
 
 (defun eslide-get-slide-near (pos)
   (save-excursion
