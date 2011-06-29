@@ -361,6 +361,10 @@ Argument END sdfasdf."
 (defun eslide-no-lines-wrap-p (window)
   "Return T if no lines in current buffer wrap when displayed in WINDOW."
   (with-selected-window window
+    ;; (message "scale %d lines %d screen %d"
+    ;;          text-scale-mode-amount
+    ;;          (count-lines (point-min) (point-max))
+    ;;          (count-screen-lines (point-min) (point-max) nil window))
     (= (count-lines (point-min) (point-max))
        (count-screen-lines (point-min) (point-max) nil window))))
 
@@ -390,7 +394,10 @@ Argument END sdfasdf."
     (let* ((show (eslide-show))
            (narrowest (eslide-narrowest-window show))
            (shortest (eslide-shortest-window show))
-           (max-size-width (eslide-maximizing-text-scale #'eslide-no-lines-wrap-p narrowest)))
-      (eslide-maximizing-text-scale #'eslide-buffer-fits-on-one-screen-p shortest max-size-width))))
+           (max-size-width  (eslide-maximizing-text-scale #'eslide-no-lines-wrap-p narrowest))
+           (max-size-height (eslide-maximizing-text-scale #'eslide-buffer-fits-on-one-screen-p shortest max-size-width)))
+      ;; (message "size %d %d" max-size-width max-size-height)
+      max-size-height)))
+
 
 (provide 'eslide)
