@@ -164,6 +164,9 @@ Optional argument WHICH controls which buffers to return and in what order; curr
       (eslide-format-slide)
       (text-scale-increase 0)
       (text-scale-increase (eslide-scale-for-slide text))
+      (redisplay)
+      (when (not (eslide-no-lines-wrap-p (selected-window)))
+        (text-scale-decrease 1))
       (goto-char (point-min)))))
 
 (defmacro with-string-buffer (string &rest forms)
