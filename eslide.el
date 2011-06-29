@@ -342,9 +342,10 @@ Argument END sdfasdf."
 (defmacro* with-eslide-temp-show-buffer (&body forms)
   "Execute FORMS in a temp buffer (with special eslide settings in effect)."
   (declare (indent 0))
-  `(with-temp-buffer
-     (variable-pitch-mode 1)
-     ,@forms))
+  `(with-selected-window (eslide-narrowest-window (eslide-show))
+     (with-temp-buffer
+       (variable-pitch-mode 1)
+       ,@forms)))
 
 (defun eslide-buffer-fits-on-one-screen-p (window)
   "Return T if current buffer when displayed on WINDOW will not need to scroll."
