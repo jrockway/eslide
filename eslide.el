@@ -322,11 +322,18 @@ Argument END sdfasdf."
   (with-current-buffer (eslide-show)
     (text-scale-decrease 1)))
 
+(defun eslide-minimize (list function)
+  "Return the element of LIST that FUNCTION makes smallest."
+  (caar (sort (mapcar (lambda (x) (cons x (funcall function x))) list)
+              (lambda (a b) (< (cdr a) (cdr b))))))
+
 (defun eslide-narrowest-window (buffer)
-  (car (get-buffer-window-list buffer nil t))) ;;; XXX not really
+  (eslide-minimize (get-buffer-window-list buffer nil t)
+                   #'window-width))
 
 (defun eslide-shortest-window (buffer)
-  (car (get-buffer-window-list buffer nil t))) ;;; XXX not really
+  (eslide-minimize (get-buffer-window-list buffer nil t)
+                   #'window-body-height))
 
 (defun eslide-text-scale (size)
   (text-scale-increase 0)
