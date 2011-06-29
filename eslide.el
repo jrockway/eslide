@@ -373,13 +373,8 @@ Argument END sdfasdf."
   (cond ((not (window-live-p window)) 0)
         (t (or (loop for scale from 0 to max
                      do (eslide-text-scale scale)
-;                     do (message "scale: %d" scale)
-;                     do (sit-for .1)
                      if (not (funcall predicate window))
-                     return (1- scale)
-;                     else
-;                     do (message "still ok")
-                     ) max))))
+                     return (1- scale)) max))))
 
 (defun eslide-scale-for-slide (slide)
   "Return the maximum text-scale value for SLIDE where no lines wrap and where every line is visible in every ESlide Show window."
