@@ -157,6 +157,8 @@ Optional argument WHICH controls which buffers to return and in what order; curr
 (defun eslide-show-slide (text)
   (with-current-buffer (eslide-show)
     (let ((inhibit-read-only t))
+      (setq cursor-type nil)
+      (setq cursor-in-non-selected-windows nil)
       (delete-region (point-min) (point-max))
       (insert text)
       (eslide-format-slide)
