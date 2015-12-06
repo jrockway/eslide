@@ -23,7 +23,7 @@
             ("_" . eslide-text-scale-decrease)
             ("<XF86AudioLowerVolume>" . eslide-text-scale-decrease)
             )
-          do (define-key m (macroexpand `(kbd ,key)) command))
+          do (define-key m (kbd key) command))
     m))
 
 (defconst +eslide-separator+ "^----\n")
